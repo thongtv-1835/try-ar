@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #video {
+      display: none;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <video id="video" autoplay playsInline></video>
+  <canvas id="canvas"></canvas>
+  <script>
+    // Older browsers might not implement mediaDevices at all, so we set an empty object first
+    // if (navigator.mediaDevices === undefined) {
+    //   navigator.mediaDevices = {};
+    // }
+
+    // // Some browsers partially implement mediaDevices. We can't just assign an object
+    // // with getUserMedia as it would overwrite existing properties.
+    // // Here, we will just add the getUserMedia property if it's missing.
+    // if (navigator.mediaDevices.getUserMedia === undefined) {
+    //   navigator.mediaDevices.getUserMedia = function (constraints) {
+
+    //     // First get ahold of the legacy getUserMedia, if present
+    //     const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+    //     // Some browsers just don't implement it - return a rejected promise with an error
+    //     // to keep a consistent interface
+    //     if (!getUserMedia) {
+    //       return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+    //     }
+
+    //     // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
+    //     return new Promise(function (resolve, reject) {
+    //       getUserMedia.call(navigator, constraints, resolve, reject);
+    //     });
+    //   }
+    // }
+
+    const constraints = { audio: false, video: { facingMode: "environment" } };
+
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(function (mediaStream) {
+        console.log('1111')
+        const video = document.getElementById('video');
+        // video.autoplay = true;
+        // video.playsInline = true;
+
+        if ("srcObject" in video) {
+          video.srcObject = mediaStream;
+        } else {
+          // Avoid using this in new browsers, as it is going away.
+          video.src = window.URL.createObjectURL(mediaStream);
+        }
+        video.onloadedmetadata = function (e) {
+          video.play();
+        };
+        // video.onloadedmetadata = function (e) {
+        //   video.play();
+        // };
+      }).catch(() => {
+        // TODO
+      })
+
+    // vẽ video vào canvas để từ canvas lấy ra đc image => đưa vào model (như trong slide)
+    // copy from: https://www.damirscorner.com/blog/posts/20170317-RenderCapturedVideoToFullPageCanvas.html
+    // note: tỉ lệ chưa đc full, update sau
+
+    const canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+
+    // biến này chỉ để debug, log 1 lần
+    let logged = false;
+
+    function renderFrame() {
+      // re-register callback
+      requestAnimationFrame(renderFrame);
+      // set internal canvas size to match HTML element size
+      canvas.width = canvas.scrollWidth;
+      canvas.height = canvas.scrollHeight;
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        // scale and horizontally center the camera image
+        var videoSize = { width: video.videoWidth, height: video.videoHeight };
+        var canvasSize = { width: canvas.width, height: canvas.height };
+        var renderSize = calculateSize(videoSize, canvasSize);
+        var xOffset = (canvasSize.width - renderSize.width) / 2;
+        context.drawImage(video, xOffset, 0, renderSize.width, renderSize.height);
+
+        // var dataURL = canvas.toDataURL();
+        if (!logged) {
+          // console.log(dataURL);
+          // getImageData sẽ trả về dạng ArrayBuffer
+          console.log(context.getImageData(0, 0, renderSize.width, renderSize.height))
+          logged = true;
+        }
+
+        // TODO
+        // model detect ... 
+      }
+    }
+
+    requestAnimationFrame(renderFrame);
+
+    function calculateSize(srcSize, dstSize) {
+      var srcRatio = srcSize.width / srcSize.height;
+      var dstRatio = dstSize.width / dstSize.height;
+      if (dstRatio > srcRatio) {
+        return {
+          width: dstSize.height * srcRatio,
+          height: dstSize.height
+        };
+      } else {
+        return {
+          width: dstSize.width,
+          height: dstSize.width / srcRatio
+        };
+      }
+    }
+  </script>
+</body>
+
+</html>
