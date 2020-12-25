@@ -11,6 +11,7 @@
 </head>
 
 <body>
+  <div id="dragBox"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r123/three.min.js"></script>
   <script>
     // source: https://stackoverflow.com/questions/27409074/converting-3d-position-to-2d-screen-position-r69
@@ -44,36 +45,82 @@
     const geometry = new THREE.BoxGeometry();
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new THREE.Mesh(geometry, material);
+    cube.position.x = -1;
+    cube.position.y = -1;
+    // cube.position.z = 1;
     scene.add(cube);
 
+    const axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper)
+
     camera.position.z = 5;
+    const cameraAxesHelper = new THREE.AxesHelper(5);
+    cube.add(cameraAxesHelper);
 
-    const animate = function () {
-      requestAnimationFrame(animate);
+    // const animate = function () {
+    //   requestAnimationFrame(animate);
 
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
+    //   cube.rotation.x += 0.01;
+    //   cube.rotation.y += 0.01;
 
-      renderer.render(scene, camera);
-    };
+    //   renderer.render(scene, camera);
+    // };
 
     // animate();
+    // renderer.render(scene, camera);
+
+    // const { x, y } = toScreenPosition(cube, camera);
+
+    // // draw 
+    // const tracker = document.createElement('div');
+
+    // tracker.style.width = '150px';
+    // tracker.style.height = '150px';
+    // tracker.style.border = '1px solid #fff';
+    // tracker.style.position = 'fixed';
+    // tracker.style.left = `${x - 75}px`;
+    // tracker.style.top = `${y - 75}px`;
+
+    // document.body.appendChild(tracker)
+
+    // // 
+    const to3dPosition = (x, y) => {
+      var vec = new THREE.Vector3(); // create once and reuse
+      var pos = new THREE.Vector3(); // create once and reuse
+
+      vec.set(
+        (x / window.innerWidth) * 2 - 1,
+        - (y / window.innerHeight) * 2 + 1,
+        0.5);
+
+      vec.unproject(camera);
+
+      vec.sub(camera.position).normalize();
+
+      var distance = - camera.position.z / vec.z;
+
+      pos.copy(camera.position).add(vec.multiplyScalar(distance));
+
+      return pos;
+    }
+    // cube.position.x = to3dPosition(150, 150).x;
+    // cube.position.y = to3dPosition(150, 150).y;
+    // // cube.position = { ...cube.position, ...to3dPosition(300, 300) }
     renderer.render(scene, camera);
 
-    const { x, y } = toScreenPosition(cube, camera);
+    // // random position
+    // const pos = [300, 300]
+    // const width = 200;
 
-    // draw 
-    const tracker = document.createElement('div');
+    // // 
+    // const drawBox = () => {
 
-    tracker.style.width = '150px';
-    tracker.style.height = '150px';
-    tracker.style.border = '1px solid #fff';
-    tracker.style.position = 'fixed';
-    tracker.style.left = `${x - 75}px`;
-    tracker.style.top = `${y - 75}px`;
+    // }
 
-    document.body.appendChild(tracker)
-
+    function getSize(object) {
+      const box3 = new THREE.Box3().setFromObject(object);
+      return box3.getSize();
+    }
   </script>
 </body>
 
